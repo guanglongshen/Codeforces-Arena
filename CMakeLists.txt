@@ -1,15 +1,26 @@
 cmake_minimum_required(VERSION 3.19)
 project(CodeforcesArena LANGUAGES CXX)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets LinguistTools)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets LinguistTools Sql Svg)
 
 qt_standard_project_setup()
 
+set(CMAKE_AUTORCC ON)
+
+set(app_icon_resource "")
+if(WIN32)
+    set(app_icon_resource "app.rc")
+endif()
+
+# 项目文件目录
 qt_add_executable(CodeforcesArena
     WIN32 MACOSX_BUNDLE
     main.cpp
-    mainwindow.cpp
-    mainwindow.h
+    class/mainwindow.h class/mainwindow.cpp
+    class/profiles.h class/profiles.cpp
+    class/handledialog.h class/handledialog.cpp
+    R.qrc
+    ${app_icon_resource}
 )
 
 qt_add_translations(
@@ -21,6 +32,8 @@ target_link_libraries(CodeforcesArena
     PRIVATE
         Qt::Core
         Qt::Widgets
+        Qt6::Sql
+        Qt6::Svg
 )
 
 install(TARGETS CodeforcesArena

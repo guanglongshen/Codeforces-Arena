@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/pictures">
+        <file>assets/cfFullLogo.png</file>
+        <file>assets/cfUI.svg</file>
+        <file>assets/cfIcon.ico</file>
+        <file>assets/handleSetter.png</file>
+    </qresource>
+</RCC>

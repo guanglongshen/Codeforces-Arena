@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "class/mainwindow.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -6,6 +6,11 @@
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
+    a.setWindowIcon(QIcon(":/pictures/assets/cfIcon.ico"));
+
+    // 设置基础信息
+    QCoreApplication::setOrganizationName("CF");
+    QCoreApplication::setApplicationName("CFA");
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
@@ -17,6 +22,6 @@ int main(int argc, char *argv[]) {
         }
     }
     MainWindow w;
-    w.show();
+    w.showMaximized();
     return QCoreApplication::exec();
 }

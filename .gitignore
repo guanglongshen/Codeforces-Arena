@@ -13,7 +13,7 @@
 *.so
 *.so.*
 *_pch.h.cpp
-*_resource.rc
+*_resource.rc 
 *.qm
 .#*
 *.*#
@@ -82,3 +82,7 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 /.qtcreator/
+
+# Sqlite database
+*.db
+*.sqlite
