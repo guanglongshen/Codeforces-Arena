@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.19)
 project(CodeforcesArena LANGUAGES CXX)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets LinguistTools Sql Svg)
+find_package(Qt6 6.5 REQUIRED COMPONENTS
+    Core
+    Widgets
+    LinguistTools
+    Sql
+    Svg
+    Network
+)
 
 qt_standard_project_setup()
 
@@ -21,6 +28,7 @@ qt_add_executable(CodeforcesArena
     class/handledialog.h class/handledialog.cpp
     R.qrc
     ${app_icon_resource}
+    class/cfapiworker.h class/cfapiworker.cpp
 )
 
 qt_add_translations(
@@ -34,6 +42,7 @@ target_link_libraries(CodeforcesArena
         Qt::Widgets
         Qt6::Sql
         Qt6::Svg
+        Qt6::Network
 )
 
 install(TARGETS CodeforcesArena

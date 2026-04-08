@@ -30,7 +30,7 @@ HandleDialog::HandleDialog() {
     askCheckbox = new QCheckBox;
 
     QSettings settings;
-    bool ask = settings.value("handle", false).toBool();
+    bool ask = settings.value("alwaysAskHandle", false).toBool();
     askCheckbox->setChecked(ask);
 
     askTip = new QLabel(tr("Ask me everytime the application starts"));

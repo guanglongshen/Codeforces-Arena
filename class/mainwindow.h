@@ -14,8 +14,6 @@ public:
 protected:
 
 private:
-    // Handle 是否需要设置
-    bool handleSet;
     QString username;
 
     QMenuBar *mBar;
@@ -27,6 +25,7 @@ private:
     void menuInit();
 
 private slots:
-
+    // 接收用户信息
+    void onUserInfoReceived(const QByteArray &data);
 };
 #endif // MAINWINDOW_H
