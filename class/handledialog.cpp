@@ -3,6 +3,8 @@
 #include <QSettings>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QToolTip>
+#include <QTimer>
 
 HandleDialog::HandleDialog() {
     this->setWindowTitle(tr("Set Default Handle"));
@@ -54,9 +56,41 @@ HandleDialog::HandleDialog() {
     this->setLayout(vlayout);
 
     connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
-    connect(setBtn, &QPushButton::clicked, this, &QDialog::accept);
+    connect(setBtn, &QPushButton::clicked, this, [this](){
+        // 先检查用户名是否为空
+        if (handleTxt->text().trimmed().isEmpty()) {
+            handleTxt->clear();
+
+            // 只有当 StyleSheet 不包含样式，才会设置红色醒目，避免多次点击 Set 而触发多个 QTimer
+            if (!handleTxt->styleSheet().contains("red")) {
+                handleTxt->setStyleSheet("border: 1px solid red; background-color: #FFF0F0;");
+
+                // 2s 后恢复默认
+                QTimer::singleShot(2000, this, [this](){
+                    handleTxt->setStyleSheet("");
+                });
+            }
+
+            handleTxt->setFocus();
+            QToolTip::showText(handleTxt->mapToGlobal(QPoint(handleTxt->width(), -15)), tr("Handle cannot be null or spaces!"), handleTxt);
+            return ;
+        }
+
+        this->accept();
+    });
+
+    // 2s 内可能用户修改了 handleTxt
+    connect(handleTxt, &QLineEdit::textChanged, this, [this](const QString &txt){
+        if (!txt.trimmed().isEmpty()) {
+            handleTxt->setStyleSheet("");
+        }
+    });
 }
 
 QString HandleDialog::getHandle() {
-    return handleTxt->text();
+    return handleTxt->text().trimmed();
+}
+
+bool HandleDialog::getAskHandle() {
+    return askCheckbox->checkState();
 }

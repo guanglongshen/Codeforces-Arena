@@ -12,6 +12,7 @@ class HandleDialog : public QDialog {
 public:
     HandleDialog();
     QString getHandle();
+    bool getAskHandle();
 
 private:
     QLabel *askTip;

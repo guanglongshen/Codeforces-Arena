@@ -2,15 +2,19 @@
 
 #include <QApplication>
 #include <QLocale>
+#include <QSettings>
 #include <QTranslator>
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
     a.setWindowIcon(QIcon(":/pictures/assets/cfIcon.ico"));
 
-    // 设置基础信息
+    // 设置本地基础信息以及配置
     QCoreApplication::setOrganizationName("CF");
-    QCoreApplication::setApplicationName("CFA");
+    QCoreApplication::setApplicationName("Codeforces Arena");
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::applicationDirPath());
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings settings;
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
