@@ -1,4 +1,3 @@
-#include "cfapiworker.h"
 #include "handledialog.h"
 #include "mainwindow.h"
 #include "profiles.h"
@@ -9,19 +8,22 @@
 #include <QJsonDocument>
 #include <QMenuBar>
 #include <QJsonObject>
-#include <QThread>
 #include <QJsonArray>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) {
+    // API 线程开启
+    apiWorkerThread();
 
+    // 菜单界面搭建
+    menuInit();
 
     QSettings settings;
-    bool handleSet = settings.value("firstRun", false).toBool();
+    bool handleSet = settings.value("firstRun", true).toBool();
     bool alwaysAsk = settings.value("alwaysAskHandle", false).toBool();
     username = settings.value("username").toString();
 
-    if (!handleSet || alwaysAsk) {
+    if (handleSet || alwaysAsk) {
         if (!username.isEmpty()) {
             this->setWindowTitle(tr("Codeforces Arena [ %1 ] - logined").arg(username));
         }
@@ -33,7 +35,6 @@ MainWindow::MainWindow(QWidget *parent)
         this->setWindowTitle(tr("Codeforces Arena [ %1 ] - Logined" ).arg(username));
     }
 
-    menuInit();
 
     // 搭建主界面
     mainTags = new QTabWidget;
@@ -41,7 +42,16 @@ MainWindow::MainWindow(QWidget *parent)
     this->setCentralWidget(mainTags);
 }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow() {
+    // 析构函数需要处理好子线程生存
+    if (apiThread && apiThread->isRunning()) {
+        apiThread->quit();
+
+        if (!apiThread->wait(1000)) {
+            apiThread->terminate();
+        }
+    }
+};
 
 void MainWindow::handleCheck() {
     HandleDialog dialog;
@@ -49,36 +59,14 @@ void MainWindow::handleCheck() {
     if (dialog.exec() == QDialog::Accepted) {
         QSettings settings;
         settings.setValue("alwaysAskHandle", dialog.getAskHandle());
-        settings.setValue("firstRun", true);
+        settings.setValue("firstRun", false);
 
         QString Handlename = dialog.getHandle();
         settings.setValue("username", Handlename);
 
-        // 创建线程去获取信息
-        QThread *apiThread = new QThread();
-        CFApiWorker *worker = new CFApiWorker();
+        emit sig_requestUserInfo(Handlename);
 
-        worker->moveToThread(apiThread);
-        connect(apiThread, &QThread::finished, worker, &QObject::deleteLater);
-        connect(apiThread, &QThread::finished, apiThread, &QObject::deleteLater);
-
-        // 线程开始 执行的内容
-        connect(apiThread, &QThread::started, worker, [worker, Handlename](){
-            worker->requestUserInfo(Handlename);
-        });
-
-        // 接收用户信息数据信号，把数据得到
-        connect(worker, &CFApiWorker::userInfoData, this, [this](const QByteArray &data){
-            this->onUserInfoReceived(data);
-
-            // 完成所有内容，退出线程
-            sender()->thread()->quit();
-        });
-
-        apiThread->start();
         this->setWindowTitle(tr("Codeforces Arena [ %1 ] - Loading...").arg(Handlename));
-    } else {
-        qDebug() << "Canceled!";
     }
 }
 
@@ -92,6 +80,36 @@ void MainWindow::menuInit() {
 
     connect(exitAct, &QAction::triggered, this, &QMainWindow::close);
     connect(changeDefaultHandleAct, &QAction::triggered, this, &MainWindow::handleCheck);
+}
+
+void MainWindow::apiWorkerThread() {
+    apiThread = new QThread(this);
+    worker = new CFApiWorker();
+
+    worker->moveToThread(apiThread);
+
+    // 将 MainWindow 各种 API 请求信号连接给 worker
+    // 用户信息 UserInfo
+    connect(this, &MainWindow::sig_requestUserInfo, worker, &CFApiWorker::requestUserInfo);
+
+    // 接收 worker 各种 API GET 回的数据到 MainWindow 上
+    // 用户信息
+    connect(worker, &CFApiWorker::sig_GetUserInfo, this, &MainWindow::onUserInfoReceived);
+
+    // 错误情况
+    connect(worker, &CFApiWorker::sig_ErrorOccurred, this, [this](const QByteArray &data, const QString &message) {
+        qDebug() << message;
+
+        QJsonDocument doc = QJsonDocument::fromJson(data);
+        QJsonObject obj = doc.object();
+        qDebug() << obj["status"].toString() << "\n" << obj["comment"];
+    });
+
+    // worker 最后需要在子线程结束后进行销毁
+    connect(apiThread, &QThread::finished, worker, &QObject::deleteLater);
+
+    // 开启线程
+    apiThread->start();
 }
 
 void MainWindow::onUserInfoReceived(const QByteArray &data) {
@@ -108,8 +126,11 @@ void MainWindow::onUserInfoReceived(const QByteArray &data) {
             // 字段
             qDebug() << userObj["rank"] << " " << userObj["rating"];
             qDebug() << userObj["maxRank"] << " " << userObj["maxRating"];
-            qDebug() << userObj["avator"];
+            qDebug() << userObj["avatar"];
+
+            this->setWindowTitle(tr("Codeforces Arena [ %1 - %2 ]").arg(userObj["handle"].toString()).arg(userObj["rating"].toInt()));
         }
+
     } else {
         qDebug() << "API ERROR: " << obj["comment"].toString();
     }
