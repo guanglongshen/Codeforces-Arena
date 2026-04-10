@@ -4,5 +4,9 @@
         <file>assets/cfUI.svg</file>
         <file>assets/cfIcon.ico</file>
         <file>assets/handleSetter.png</file>
+        <file>assets/contribution.png</file>
+        <file>assets/name.png</file>
+        <file>assets/rank.png</file>
+        <file>assets/rating.png</file>
     </qresource>
 </RCC>

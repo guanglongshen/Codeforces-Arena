@@ -32,7 +32,7 @@ private slots:
 signals:
     // 查询成功后 分别发送成功信号，将数据传递回 mainWindow 处理
     void sig_GetUserInfo(const QByteArray &data);
-    void sig_ErrorOccurred(const QByteArray &data, const QString &error);
+    void sig_ErrorOccurred(const ApiType &type, const QByteArray &data, const QString &error);
 
 private:
     QNetworkAccessManager *manager = nullptr;

@@ -1,6 +1,5 @@
 #include "handledialog.h"
 #include "mainwindow.h"
-#include "profiles.h"
 #include <QFile>
 #include <QDialog>
 #include <QTimer>
@@ -9,15 +8,10 @@
 #include <QMenuBar>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) {
-    // API 线程开启
-    apiWorkerThread();
-
-    // 菜单界面搭建
-    menuInit();
-
     QSettings settings;
     bool handleSet = settings.value("firstRun", true).toBool();
     bool alwaysAsk = settings.value("alwaysAskHandle", false).toBool();
@@ -38,8 +32,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 搭建主界面
     mainTags = new QTabWidget;
-    mainTags->addTab(new Profiles(), tr("PROFILES"));
+    profiles = new Profiles;
+    mainTags->addTab(profiles, tr("PROFILES"));
     this->setCentralWidget(mainTags);
+
+    // API 线程开启
+    apiWorkerThread();
+
+    // 菜单界面搭建
+    menuInit();
 }
 
 MainWindow::~MainWindow() {
@@ -61,12 +62,11 @@ void MainWindow::handleCheck() {
         settings.setValue("alwaysAskHandle", dialog.getAskHandle());
         settings.setValue("firstRun", false);
 
-        QString Handlename = dialog.getHandle();
-        settings.setValue("username", Handlename);
+        username = dialog.getHandle();
 
-        emit sig_requestUserInfo(Handlename);
+        emit sig_requestUserInfo(username);
 
-        this->setWindowTitle(tr("Codeforces Arena [ %1 ] - Loading...").arg(Handlename));
+        this->setWindowTitle(tr("Codeforces Arena [ %1 ] - Loading...").arg(username));
     }
 }
 
@@ -89,20 +89,25 @@ void MainWindow::apiWorkerThread() {
     worker->moveToThread(apiThread);
 
     // 将 MainWindow 各种 API 请求信号连接给 worker
-    // 用户信息 UserInfo
+    // 主界面设置或修改 Handle 用户信息，向 Worker 发出请求信号
     connect(this, &MainWindow::sig_requestUserInfo, worker, &CFApiWorker::requestUserInfo);
 
     // 接收 worker 各种 API GET 回的数据到 MainWindow 上
     // 用户信息
+    connect(worker, &CFApiWorker::sig_GetUserInfo, profiles, &Profiles::onUserInfoReceived);
     connect(worker, &CFApiWorker::sig_GetUserInfo, this, &MainWindow::onUserInfoReceived);
 
     // 错误情况
-    connect(worker, &CFApiWorker::sig_ErrorOccurred, this, [this](const QByteArray &data, const QString &message) {
-        qDebug() << message;
-
+    connect(worker, &CFApiWorker::sig_ErrorOccurred, this, [this](const ApiType &type, const QByteArray &data, const QString &message) {
+        // 都先提取数据，错误数据也能读取
         QJsonDocument doc = QJsonDocument::fromJson(data);
         QJsonObject obj = doc.object();
-        qDebug() << obj["status"].toString() << "\n" << obj["comment"];
+
+        // 根据 API 请求的类型，作出不同的提示
+        if (type == ApiType::USERINFO) {
+            QMessageBox::warning(this, tr("Warning"), tr("%1 does not exist! Please reset your handle.").arg(username));
+            this->setWindowTitle(tr("Codeforces Arena [ %1 ] - invalid").arg(username));
+        }
     });
 
     // worker 最后需要在子线程结束后进行销毁
@@ -112,28 +117,10 @@ void MainWindow::apiWorkerThread() {
     apiThread->start();
 }
 
-void MainWindow::onUserInfoReceived(const QByteArray &data) {
-    QJsonDocument doc = QJsonDocument::fromJson(data);
-    QJsonObject obj = doc.object();
-
-    if (obj["status"].toString() == "OK") {
-        qDebug() << "Get Data";
-
-        QJsonArray resultArray = obj["result"].toArray();
-        if (!resultArray.isEmpty()) {
-            QJsonObject userObj = resultArray.first().toObject();
-
-            // 字段
-            qDebug() << userObj["rank"] << " " << userObj["rating"];
-            qDebug() << userObj["maxRank"] << " " << userObj["maxRating"];
-            qDebug() << userObj["avatar"];
-
-            this->setWindowTitle(tr("Codeforces Arena [ %1 - %2 ]").arg(userObj["handle"].toString()).arg(userObj["rating"].toInt()));
-        }
-
-    } else {
-        qDebug() << "API ERROR: " << obj["comment"].toString();
-    }
+void MainWindow::onUserInfoReceived() {
+    // 设置已经成功登录
+    this->setWindowTitle(tr("Codeforces Arena [ %1 ] - Logined!").arg(username));
+    // 用户存在，记录进系统设置中
+    QSettings settings;
+    settings.setValue("username", username);
 }
-
-

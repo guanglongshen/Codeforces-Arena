@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "cfapiworker.h"
+#include "profiles.h"
 
 #include <QMainWindow>
 #include <QTabWidget>
@@ -22,6 +23,7 @@ private:
 
     // 主要标签
     QTabWidget *mainTags;
+    Profiles *profiles;
 
     void handleCheck();
     void menuInit();
@@ -34,7 +36,6 @@ signals:
     // 请求得到 Handle 用户信息信号
     void sig_requestUserInfo(const QString &Handle);
 private slots:
-    // 接收用户信息
-    void onUserInfoReceived(const QByteArray &data);
+    void onUserInfoReceived();
 };
 #endif // MAINWINDOW_H

@@ -71,7 +71,7 @@ void CFApiWorker::processQueue() {
                 break;
             }
         } else {
-            emit sig_ErrorOccurred(reply->readAll(), reply->errorString());
+            emit sig_ErrorOccurred(task.type, reply->readAll(), reply->errorString());
         }
         reply->deleteLater();
     });
