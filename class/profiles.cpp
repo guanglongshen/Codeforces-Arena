@@ -4,12 +4,37 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QNetworkReply>
 #include <QSettings>
 #include <QVBoxLayout>
 
 Profiles::Profiles(QWidget *parent)
     : QWidget{parent} {
     initUI();
+    manager = new QNetworkAccessManager(this);
+}
+
+void Profiles::downloadImage(const QString &urlText) {
+    QUrl url(urlText);
+    QNetworkRequest request(url);
+
+    QNetworkReply *reply = manager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray imageData = reply->readAll();
+            QPixmap pixmap;
+            pixmap.loadFromData(imageData);
+
+            if (!pixmap.isNull()) {
+                avatar->setCirclePixmap(pixmap);
+            }
+        } else {
+            qDebug() << reply->errorString();
+        }
+
+        reply->deleteLater();
+    });
 }
 
 void Profiles::initUI() {
@@ -68,8 +93,10 @@ void Profiles::initUI() {
     hcontribution->addWidget(contribution);
     hcontribution->addStretch();
 
-    avatar = new QLabel(tr("pic"));
-    avatar->setFixedSize(64, 64);
+    avatar = new CircleImageLabel;
+    QPixmap pix(":/pictures/assets/avatarTest.jpg");
+    avatar->setCirclePixmap(pix);
+    avatar->setFixedSize(96, 96);
 
     v1Text->addLayout(hrank);
     v1Text->addLayout(hname);
@@ -102,6 +129,9 @@ void Profiles::onUserInfoReceived(const QByteArray &data) {
             mxRating = userObj["maxRating"].toInt();
             avatar = userObj["avatar"].toString();
             contribution = userObj["contribution"].toInt();
+
+            // 获取头像
+            downloadImage(avatar);
         }
     } else {
         qDebug() << "API ERROR: " << obj["comment"].toString();
@@ -156,6 +186,6 @@ void Profiles::onUserInfoReceived(const QByteArray &data) {
     } else if (contribution > 0) {
         this->contribution->setText(QString("Contribution: <span style='color:green;'><b>+%1</b></span>").arg(contribution));
     } else {
-        this->contribution->setText(QString("Contribution: <span style='color:red;'><b>-%1</b></span>").arg(contribution));
+        this->contribution->setText(QString("Contribution: <span style='color:red;'><b>%1</b></span>").arg(contribution));
     }
 }

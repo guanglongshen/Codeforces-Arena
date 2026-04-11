@@ -8,5 +8,6 @@
         <file>assets/name.png</file>
         <file>assets/rank.png</file>
         <file>assets/rating.png</file>
+        <file>assets/avatarTest.jpg</file>
     </qresource>
 </RCC>

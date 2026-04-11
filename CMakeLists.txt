@@ -29,6 +29,7 @@ qt_add_executable(CodeforcesArena
     R.qrc
     ${app_icon_resource}
     class/cfapiworker.h class/cfapiworker.cpp
+    class/circleimagelabel.h class/circleimagelabel.cpp
 )
 
 qt_add_translations(
